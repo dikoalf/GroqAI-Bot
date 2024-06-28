@@ -6,7 +6,7 @@ import fitz
 st.title("Grog Bot")
 
 # Inisialisasi ChatGrog
-key = "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"
+key = ""
 chat = ChatGroq(
     temperature=0,
     model="llama3-70b-8192",
