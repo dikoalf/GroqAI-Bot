@@ -51,13 +51,17 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     # Menambahkan pesan/prompt user ke dalam chat history
     st.session_state.messages.append({"role": "user", "content": grogInput})
 
-    # Menggabungkan teks PDF dengan input user
-    combinedInput = fileContents + "\n\n" + grogInput
-
     response = groqPrompt | chat
 
     try:
-        response = response.invoke({"text": combinedInput})
+        if file:
+            # Menggabungkan teks PDF dengan input user
+            combinedInput = fileContents + "\n\n" + grogInput
+            
+            response = response.invoke({"text": combinedInput})
+        else:
+            response = response.invoke({"text": grogInput})   
+
         response = response.content
     except:
         response = "Maaf, permintaan anda tidak dapat dilakukan saat ini."
