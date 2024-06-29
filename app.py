@@ -1,12 +1,16 @@
+import os
+from dotenv import load_dotenv
 import streamlit as st
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 import fitz
 
-st.title("Grog Bot")
+st.title("Groq Bot")
 
-# Inisialisasi ChatGrog
-key = ""
+# Inisialisasi GroqAI
+load_dotenv()
+
+key = os.getenv("GROQ_AI_API_KEY")
 chat = ChatGroq(
     temperature=0,
     model="llama3-70b-8192",
