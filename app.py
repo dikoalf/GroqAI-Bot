@@ -27,7 +27,7 @@ human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
 # Inisialisasi Index
-index = minsearch.Index(text_fields=["input","content"], keyword_fields=[])
+index = minsearch.Index(text_fields=["input","content"], keyword_fields=["content"])
 
 # Inisialisasi knowledgeBased
 if "knowledgeBased" not in st.session_state:
@@ -54,8 +54,6 @@ def readPDF(file):
 file = st.file_uploader("Upload PDF", type="pdf")
 if file:
     fileContents = readPDF(file)
-    # Tambahkan konten file ke dalam Index
-    st.session_state.knowledgeBased.append({"input":"File","content": fileContents})
 
 # React to user input
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
@@ -68,6 +66,10 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     response = groqPrompt | chat
 
     try:
+        if file:
+            # Tambahkan konten file ke dalam Index
+            st.session_state.knowledgeBased.append({"input":"File","content": fileContents})
+        
         language, confidence = langid.classify(grogInput)
         index.fit(st.session_state.knowledgeBased)
         
@@ -75,7 +77,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         searchResult = index.search(
             query = grogInput, 
             boost_dict= {'content': 3.0, 'input': 0.5},
-            num_results=1
+            num_results=min(len(st.session_state.knowledgeBased), 5)
         )
 
         if searchResult:
