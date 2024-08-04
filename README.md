@@ -15,8 +15,8 @@ Welcome to the Groq Bot Chatbot project! This chatbot is designed to provide int
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/groq-bot-chatbot.git
-   cd groq-bot-chatbot
+   ggit clone https://github.com/dikoalf/GroqAI-Bot.git
+   cd GroqAI-Bot
    ```
 
 2. Create a virtual environment and activate it:
