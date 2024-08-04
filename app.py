@@ -27,7 +27,7 @@ human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
 # Inisialisasi Index
-index = minsearch.Index(text_fields=["input","content"], keyword_fields=["content"])
+index = minsearch.Index(text_fields=["input","content"], keyword_fields=[])
 
 # Inisialisasi knowledgeBased
 if "knowledgeBased" not in st.session_state:
