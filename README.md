@@ -1,5 +1,3 @@
-Tentu! Berikut adalah contoh README untuk proyek chatbot Anda di GitHub:
-
 ---
 
 # Groq Bot Chatbot
