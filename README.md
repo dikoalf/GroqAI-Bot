@@ -1,5 +1,3 @@
-Tentu! Berikut adalah contoh README untuk proyek chatbot Anda di GitHub:
-
 ---
 
 # Groq Bot Chatbot
@@ -17,8 +15,8 @@ Welcome to the Groq Bot Chatbot project! This chatbot is designed to provide int
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/groq-bot-chatbot.git
-   cd groq-bot-chatbot
+   ggit clone https://github.com/dikoalf/GroqAI-Bot.git
+   cd GroqAI-Bot
    ```
 
 2. Create a virtual environment and activate it:
@@ -63,9 +61,5 @@ Here's a brief example of how to use the chatbot:
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit a pull request with your changes.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
