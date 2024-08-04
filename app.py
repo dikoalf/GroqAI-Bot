@@ -71,14 +71,17 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
             st.session_state.knowledgeBased.append({"input":"File","content": fileContents})
         
         language, confidence = langid.classify(grogInput)
-        index.fit(st.session_state.knowledgeBased)
-        
-        # Cari di Index menggunakan MinSearch
-        searchResult = index.search(
-            query = grogInput, 
-            boost_dict= {'content': 3.0, 'input': 0.5},
-            num_results=min(len(st.session_state.knowledgeBased), 5)
-        )
+ 
+        if st.session_state.knowledgeBased:
+
+            index.fit(st.session_state.knowledgeBased)
+            
+            # Cari di Index menggunakan MinSearch
+            searchResult = index.search(
+                query = grogInput, 
+                boost_dict= {'content': 3.0, 'input': 0.5},
+                num_results=min(len(st.session_state.knowledgeBased), 5)
+            )
 
         if searchResult:
             combinedInput = "\n\n".join([result["content"] for result in searchResult]) + "\n\n" + grogInput
