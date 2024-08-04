@@ -4,6 +4,8 @@ import streamlit as st
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 import fitz
+import langid
+import minsearch
 
 st.title("Groq Bot")
 
@@ -18,9 +20,18 @@ chat = ChatGroq(
 )
 
 # Membuat template percakapan
-system = "You are a helpful assistant."
+system = """Kamu adalah asisten. 
+Selalu menjawab pertanyaan mengunakan bahasa {language}.
+"""
 human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+
+# Inisialisasi Index
+index = minsearch.Index(text_fields=["input","content"], keyword_fields=[])
+
+# Inisialisasi knowledgeBased
+if "knowledgeBased" not in st.session_state:
+    st.session_state.knowledgeBased = []
 
 # Inisialisasi chat history
 if "messages" not in st.session_state:
@@ -43,6 +54,8 @@ def readPDF(file):
 file = st.file_uploader("Upload PDF", type="pdf")
 if file:
     fileContents = readPDF(file)
+    # Tambahkan konten file ke dalam Index
+    st.session_state.knowledgeBased.append({"input":"File","content": fileContents})
 
 # React to user input
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
@@ -51,20 +64,32 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     # Menambahkan pesan/prompt user ke dalam chat history
     st.session_state.messages.append({"role": "user", "content": grogInput})
 
+    # untuk menghasilkan response dari model sesuai dengan template chat
     response = groqPrompt | chat
 
     try:
-        if file:
-            # Menggabungkan teks PDF dengan input user
-            combinedInput = fileContents + "\n\n" + grogInput
-            
-            response = response.invoke({"text": combinedInput})
-        else:
-            response = response.invoke({"text": grogInput})   
+        language, confidence = langid.classify(grogInput)
+        index.fit(st.session_state.knowledgeBased)
+        
+        # Cari di Index menggunakan MinSearch
+        searchResult = index.search(
+            query = grogInput, 
+            boost_dict= {'content': 3.0, 'input': 0.5},
+            num_results=1
+        )
 
+        if searchResult:
+            combinedInput = "\n\n".join([result["content"] for result in searchResult]) + "\n\n" + grogInput
+        else:
+            combinedInput = grogInput
+        
+        response = response.invoke({"text": combinedInput, "language": language})
         response = response.content
-    except:
-        response = "Maaf, permintaan anda tidak dapat dilakukan saat ini."
+
+        # Tambahkan input dan response ke dalam Index
+        st.session_state.knowledgeBased.append({"input":grogInput,"content": response})
+    except Exception as e:
+        response = f"Maaf, permintaan anda tidak dapat dilakukan saat ini. Error: {e}"
 
     # Menampilkan response dari groq atau pencarian
     with st.chat_message("assistant"):
