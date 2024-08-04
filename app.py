@@ -71,7 +71,8 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
             st.session_state.knowledgeBased.append({"input":"File","content": fileContents})
         
         language, confidence = langid.classify(grogInput)
- 
+        searchResult = {}
+
         if st.session_state.knowledgeBased:
 
             index.fit(st.session_state.knowledgeBased)
