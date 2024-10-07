@@ -10,6 +10,8 @@ Welcome to the Groq Bot Chatbot project! This chatbot is designed to provide int
 - **Enhanced Contextual Understanding**: By integrating a retrieval-augmented generation (RAG) approach, the chatbot can reference previous topics and provide more coherent and contextually relevant responses.
 - **PDF Integration**: Users can upload PDF files, and the chatbot can extract and utilize the content to provide more informed answers.
 - **Dynamic Search Results**: The chatbot dynamically adjusts the number of search results based on the content available, ensuring the most relevant information is always provided.
+- **Text Vectorization**: The chatbot utilizes text vectorization techniques to better understand and process natural language input, enhancing the quality of responses.
+- **Memory**: The chatbot incorporates memory capabilities to retain context and information across interactions, leading to more personalized and accurate conversations.
 
 ## Installation
 
