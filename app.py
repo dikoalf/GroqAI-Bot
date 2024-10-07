@@ -55,7 +55,7 @@ def readPDF(file):
     return text
 
 # Fungsi untuk vectorize texts
-def vectorize_texts(texts):
+def vectorText(texts):
     return vectorizer.fit_transform(texts)
 
 # Upload PDF file
