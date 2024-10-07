@@ -92,7 +92,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         # Lakukan vektorisasi knowledgeBase content
         if st.session_state.knowledgeBased:
             knowledge_texts = [item["content"] for item in st.session_state.knowledgeBased]
-            vectorized_knowledge = vectorize_texts(knowledge_texts)
+            vectorized_knowledge = vectorText(knowledge_texts)
         
         language, confidence = langid.classify(grogInput)
         searchResult = {}
