@@ -38,6 +38,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "memory" not in st.session_state:
     st.session_state.memory = []
+if "fileUploaded" not in st.session_state:
+    st.session_state.fileUploaded = False
 
 # Fungsi membaca PDF
 def readPDF(file):
@@ -78,13 +80,17 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         # Deteksi bahasa input menggunakan langid
         language, confidence = langid.classify(grogInput)
 
-        if file:
+        if file and not st.session_state.fileUploaded:
             # Lakukan chunking pada konten file PDF
             fileChunks = list(textChunk(fileContents))
             
             # Tambahkan semua chunk ke dalam knowledgeBased
             for chunk in fileChunks:
                 st.session_state.knowledgeBased.append({"input": "File", "content": chunk})
+
+            st.session_state.fileUploaded = True
+        else:
+            st.warning("Anda sudah meng-upload file PDF. Hanya satu file yang diizinkan.")
 
 
         # Tampilkan pesan dari user
