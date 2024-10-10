@@ -8,7 +8,7 @@ import langid
 import minsearch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
+from collections import Counter
 st.title("Groq Bot")
 
 # Inisialisasi GroqAI
@@ -80,6 +80,12 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         # Deteksi bahasa input menggunakan langid
         language, confidence = langid.classify(grogInput)
 
+        # Fungsi merangkum teks
+        def sumText(text):
+            prompt = groqPrompt | chat
+            response = prompt.invoke({"text": text, "language": language}).content
+            return response
+
         if file and not st.session_state.fileUploaded:
             # Lakukan chunking pada konten file PDF
             fileChunks = list(textChunk(fileContents))
@@ -87,6 +93,9 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
             # Tambahkan semua chunk ke dalam knowledgeBased
             for chunk in fileChunks:
                 st.session_state.knowledgeBased.append({"input": "File", "content": chunk})
+
+                summary = sumText(chunk)
+                st.session_state.knowledgeBased.append({"input": "Summary", "content": summary})
 
             st.session_state.fileUploaded = True
         else:
