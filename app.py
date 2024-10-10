@@ -5,10 +5,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 import fitz
 import langid
-import minsearch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from collections import Counter
+
 st.title("Groq Bot")
 
 # Inisialisasi GroqAI
@@ -29,9 +28,9 @@ human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
 # Inisialisasi Index, TfidfVectorizer, dan Memory
-index = minsearch.Index(text_fields=["input", "content"], keyword_fields=[])
 vectorizer = TfidfVectorizer()
 
+# State management untuk memori aplikasi
 if "knowledgeBased" not in st.session_state:
     st.session_state.knowledgeBased = []
 if "messages" not in st.session_state:
@@ -54,10 +53,10 @@ def vectorizeText(texts):
     return vectorizer.fit_transform(texts)
 
 # Fungsi memecah teks jadi chunks
-def textChunk(text, chunk_size=4000):
+def textChunk(text, size=4000):
     tokens = text.split()
-    for i in range(0, len(tokens), chunk_size):
-        yield ' '.join(tokens[i:i + chunk_size])
+    for i in range(0, len(tokens), size):
+        yield ' '.join(tokens[i:i + size])
 
 # Fungsi sliding window untuk memori percakapan
 def slidingWindowContext(messages, window_size=5):
@@ -67,8 +66,11 @@ def slidingWindowContext(messages, window_size=5):
 file = st.file_uploader("Upload PDF", type="pdf")
 if file:
     fileContents = readPDF(file)
-
-# Menampilkan histori chat ketika ada prompt baru
+    st.success("File berhasil di-upload!")
+else:
+    st.session_state.fileUploaded = False 
+    
+# Tampilkan histori chat ketika ada prompt baru
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -84,8 +86,10 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         def sumText(text):
             prompt = groqPrompt | chat
             response = prompt.invoke({"text": text, "language": language}).content
+
             return response
 
+        # Cek apakah file baru di-upload, jika ya tambahkan ke knowledgeBased
         if file and not st.session_state.fileUploaded:
             # Lakukan chunking pada konten file PDF
             fileChunks = list(textChunk(fileContents))
@@ -97,10 +101,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
                 summary = sumText(chunk)
                 st.session_state.knowledgeBased.append({"input": "Summary", "content": summary})
 
-            st.session_state.fileUploaded = True
-        else:
-            st.warning("Anda sudah meng-upload file PDF. Hanya satu file yang diizinkan.")
-
+            st.session_state.fileUploaded = True 
 
         # Tampilkan pesan dari user
         st.chat_message("user").markdown(grogInput)
