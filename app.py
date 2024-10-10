@@ -57,11 +57,6 @@ def textChunk(text, chunk_size=4000):
     for i in range(0, len(tokens), chunk_size):
         yield ' '.join(tokens[i:i + chunk_size])
 
-# Fungsi merangkum teks
-def sumText(text):
-    response = chat.summarize(text)
-    return response
-
 # Fungsi sliding window untuk memori percakapan
 def slidingWindowContext(messages, window_size=5):
     return messages[-window_size:]
@@ -80,27 +75,32 @@ for message in st.session_state.messages:
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
 
     try:
-        if file:
-            # Tambahkan konten file ke dalam Index dan knowledgeBased
-            st.session_state.knowledgeBased.append({"input":"File", "content": fileContents})
-        
         # Deteksi bahasa input menggunakan langid
         language, confidence = langid.classify(grogInput)
-        
+
+        if file:
+            # Lakukan chunking pada konten file PDF
+            fileChunks = list(textChunk(fileContents))
+            
+            # Tambahkan semua chunk ke dalam knowledgeBased
+            for chunk in fileChunks:
+                st.session_state.knowledgeBased.append({"input": "File", "content": chunk})
+
+
         # Tampilkan pesan dari user
         st.chat_message("user").markdown(grogInput)
         st.session_state.messages.append({"role": "user", "content": grogInput})
         st.session_state.memory.append({"role": "user", "content": grogInput})
 
-        # Lakukan chunking pada input yang lebih dari 4000 tokens
-        chunks = list(textChunk(grogInput)) if len(grogInput.split()) > 4000 else [grogInput]
-        
+        # Lakukan chunking pada input user yang lebih dari 4000 tokens
+        inputChunk = list(textChunk(grogInput)) if len(grogInput.split()) > 4000 else [grogInput]
+
         combineResponse = []
-        for chunk in chunks:
+        for chunk in inputChunk:
             tempResponse = groqPrompt | chat
             response = tempResponse.invoke({"text": chunk, "language": language}).content
             combineResponse.append(response)
-        
+
         response = ' '.join(combineResponse)
 
         # Tambahkan percakapan ke knowledgeBase dan lakukan pencarian similarity
@@ -109,7 +109,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
             vectorizedKnowledge = vectorizeText(knowledgeText)
             query = vectorizer.transform([grogInput])
             similarities = cosine_similarity(query, vectorizedKnowledge).flatten()
-            
+
             # Pilih hasil pencarian dengan similarity tertinggi
             topResults = [st.session_state.knowledgeBased[i] for i in similarities.argsort()[-5:][::-1]]
 
@@ -119,10 +119,6 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
                 combinedInput = grogInput
         else:
             combinedInput = grogInput
-        
-        # Summarize jika hasilnya terlalu panjang
-        if len(combinedInput.split()) > 4000:
-            combinedInput = sumText(combinedInput)
 
         # Ambil window percakapan terakhir menggunakan sliding window
         relevantContext = slidingWindowContext(st.session_state.memory)
@@ -132,7 +128,8 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         finalInput = memoryContext + "\n\n" + combinedInput
 
         # Menghasilkan respons final
-        finalResponse = tempResponse.invoke({"text": finalInput, "language": language}).content
+        finalResponse = groqPrompt | chat
+        finalResponse = finalResponse.invoke({"text": finalInput, "language": language}).content
 
         # Tambahkan input dan response ke knowledgeBase dan memori
         st.session_state.knowledgeBased.append({"input": grogInput, "content": finalResponse})
@@ -145,3 +142,6 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     
     st.session_state.messages.append({"role": "assistant", "content": finalResponse})
     st.session_state.memory.append({"role": "assistant", "content": finalResponse})
+
+st.write(st.session_state.knowledgeBased)
+st.write(st.session_state.memory)
