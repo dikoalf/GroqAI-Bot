@@ -23,30 +23,23 @@ chat = ChatGroq(
 
 # Membuat template percakapan
 system = """Kamu adalah asisten. 
-Selalu menjawab pertanyaan mengunakan bahasa {language}.
+Selalu menjawab pertanyaan menggunakan bahasa {language}.
 """
 human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
-# Inisialisasi Index
-index = minsearch.Index(text_fields=["input","content"], keyword_fields=[])
+# Inisialisasi Index, TfidfVectorizer, dan Memory
+index = minsearch.Index(text_fields=["input", "content"], keyword_fields=[])
+vectorizer = TfidfVectorizer()
 
-# Inisialisasi knowledgeBased
 if "knowledgeBased" not in st.session_state:
     st.session_state.knowledgeBased = []
-
-# Inisialisasi chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# Inisialisasi memory
 if "memory" not in st.session_state:
     st.session_state.memory = []
 
-# Inisialisasi TfidfVectorizer
-vectorizer = TfidfVectorizer()
-
-# Fungsi untuk membaca PDF dan mengekstrak teks
+# Fungsi membaca PDF
 def readPDF(file):
     doc = fitz.open(stream=file.read(), filetype="pdf")
     text = ""
@@ -54,11 +47,26 @@ def readPDF(file):
         text += page.get_text()
     return text
 
-# Fungsi untuk vectorize texts
-def vectorText(texts):
+# Fungsi vectorize texts
+def vectorizeText(texts):
     return vectorizer.fit_transform(texts)
 
-# Upload PDF file
+# Fungsi memecah teks jadi chunks
+def textChunk(text, chunk_size=4000):
+    tokens = text.split()
+    for i in range(0, len(tokens), chunk_size):
+        yield ' '.join(tokens[i:i + chunk_size])
+
+# Fungsi merangkum teks
+def sumText(text):
+    response = chat.summarize(text)
+    return response
+
+# Fungsi sliding window untuk memori percakapan
+def slidingWindowContext(messages, window_size=5):
+    return messages[-window_size:]
+
+# Upload PDF
 file = st.file_uploader("Upload PDF", type="pdf")
 if file:
     fileContents = readPDF(file)
@@ -70,63 +78,70 @@ for message in st.session_state.messages:
 
 # React to user input
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
-    # Menampilkan pesan/prompt dari user
-    st.chat_message("user").markdown(grogInput)
-    # Menambahkan pesan/prompt user ke dalam chat history
-    st.session_state.messages.append({"role": "user", "content": grogInput})
-    
-    # Menambahkan percakapan baru ke memori
-    st.session_state.memory.append({
-        "role": "user",
-        "content": grogInput
-    })
-
-    # untuk menghasilkan response dari model sesuai dengan template chat
-    response = groqPrompt | chat
 
     try:
         if file:
             # Tambahkan konten file ke dalam Index dan knowledgeBased
-            st.session_state.knowledgeBased.append({"input":"File","content": fileContents})
-
-        # Lakukan vektorisasi knowledgeBase content
-        if st.session_state.knowledgeBased:
-            knowledge_texts = [item["content"] for item in st.session_state.knowledgeBased]
-            vectorized_knowledge = vectorText(knowledge_texts)
+            st.session_state.knowledgeBased.append({"input":"File", "content": fileContents})
         
+        # Deteksi bahasa input menggunakan langid
         language, confidence = langid.classify(grogInput)
-        searchResult = {}
+        
+        # Tampilkan pesan dari user
+        st.chat_message("user").markdown(grogInput)
+        st.session_state.messages.append({"role": "user", "content": grogInput})
+        st.session_state.memory.append({"role": "user", "content": grogInput})
 
+        # Lakukan chunking pada input yang lebih dari 4000 tokens
+        chunks = list(textChunk(grogInput)) if len(grogInput.split()) > 4000 else [grogInput]
+        
+        combineResponse = []
+        for chunk in chunks:
+            tempResponse = groqPrompt | chat
+            response = tempResponse.invoke({"text": chunk, "language": language}).content
+            combineResponse.append(response)
+        
+        response = ' '.join(combineResponse)
+
+        # Tambahkan percakapan ke knowledgeBase dan lakukan pencarian similarity
         if st.session_state.knowledgeBased:
-            # Lakukan pencarian menggunakan cosine similarity
-            query_vector = vectorizer.transform([grogInput])
-            similarities = cosine_similarity(query_vector, vectorized_knowledge).flatten()
+            knowledgeText = [item["content"] for item in st.session_state.knowledgeBased]
+            vectorizedKnowledge = vectorizeText(knowledgeText)
+            query = vectorizer.transform([grogInput])
+            similarities = cosine_similarity(query, vectorizedKnowledge).flatten()
             
-            # Pilih hasil pencarian dengan similaritas tertinggi
-            top_results = [st.session_state.knowledgeBased[i] for i in similarities.argsort()[-5:][::-1]]
+            # Pilih hasil pencarian dengan similarity tertinggi
+            topResults = [st.session_state.knowledgeBased[i] for i in similarities.argsort()[-5:][::-1]]
 
-            if top_results:
-                combinedInput = "\n\n".join([result["content"] for result in top_results]) + "\n\n" + grogInput
+            if topResults:
+                combinedInput = "\n\n".join([result["content"] for result in topResults]) + "\n\n" + grogInput
             else:
                 combinedInput = grogInput
         else:
             combinedInput = grogInput
         
-        response = response.invoke({"text": combinedInput, "language": language})
-        response = response.content
+        # Summarize jika hasilnya terlalu panjang
+        if len(combinedInput.split()) > 4000:
+            combinedInput = sumText(combinedInput)
 
-        # Tambahkan input dan response ke dalam Index dan knowledgeBased
-        st.session_state.knowledgeBased.append({"input":grogInput,"content": response})
+        # Ambil window percakapan terakhir menggunakan sliding window
+        relevantContext = slidingWindowContext(st.session_state.memory)
+
+        # Gabungkan konteks window terakhir dengan input baru
+        memoryContext = "\n\n".join([item["content"] for item in relevantContext])
+        finalInput = memoryContext + "\n\n" + combinedInput
+
+        # Menghasilkan respons final
+        finalResponse = tempResponse.invoke({"text": finalInput, "language": language}).content
+
+        # Tambahkan input dan response ke knowledgeBase dan memori
+        st.session_state.knowledgeBased.append({"input": grogInput, "content": finalResponse})
     except Exception as e:
-        response = f"Maaf, permintaan anda tidak dapat dilakukan saat ini. Error: {e}"
-
-    # Menampilkan response dari groq atau pencarian
+        finalResponse = f"Maaf, permintaan anda tidak dapat dilakukan saat ini. Error: {e}"
+    
+    # Tampilkan respons
     with st.chat_message("assistant"):
-        st.markdown(response)
-    # Menambahkan response groq ke dalam chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    # Menambahkan response ke memori
-    st.session_state.memory.append({
-        "role": "assistant",
-        "content": response
-    })
+        st.markdown(finalResponse)
+    
+    st.session_state.messages.append({"role": "assistant", "content": finalResponse})
+    st.session_state.memory.append({"role": "assistant", "content": finalResponse})
