@@ -142,6 +142,3 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     
     st.session_state.messages.append({"role": "assistant", "content": finalResponse})
     st.session_state.memory.append({"role": "assistant", "content": finalResponse})
-
-st.write(st.session_state.knowledgeBased)
-st.write(st.session_state.memory)
