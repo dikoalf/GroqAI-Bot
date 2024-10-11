@@ -3,10 +3,8 @@ from dotenv import load_dotenv
 import streamlit as st
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-import fitz
 import langid
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from lib import readPDF, rag, textChunk, slidingWindowContext
 
 st.title("Groq Bot")
 
@@ -27,10 +25,7 @@ Selalu menjawab pertanyaan menggunakan bahasa {language}.
 human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
-# Inisialisasi Index, TfidfVectorizer, dan Memory
-vectorizer = TfidfVectorizer()
-
-# State management untuk memori aplikasi
+# Inisialisasi Knowledge based, messages history, memory dan file status
 if "knowledgeBased" not in st.session_state:
     st.session_state.knowledgeBased = []
 if "messages" not in st.session_state:
@@ -39,28 +34,6 @@ if "memory" not in st.session_state:
     st.session_state.memory = []
 if "fileUploaded" not in st.session_state:
     st.session_state.fileUploaded = False
-
-# Fungsi membaca PDF
-def readPDF(file):
-    doc = fitz.open(stream=file.read(), filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
-
-# Fungsi vectorize texts
-def vectorizeText(texts):
-    return vectorizer.fit_transform(texts)
-
-# Fungsi memecah teks jadi chunks
-def textChunk(text, size=4000):
-    tokens = text.split()
-    for i in range(0, len(tokens), size):
-        yield ' '.join(tokens[i:i + size])
-
-# Fungsi sliding window untuk memori percakapan
-def slidingWindowContext(messages, window_size=5):
-    return messages[-window_size:]
 
 # Upload PDF
 file = st.file_uploader("Upload PDF", type="pdf")
@@ -78,26 +51,25 @@ for message in st.session_state.messages:
 # React to user input
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
 
+    # Deteksi bahasa input menggunakan langid
+    language, confidence = langid.classify(grogInput)
+
+    # Fungsi merangkum teks
+    def sumText(text):
+        prompt = groqPrompt | chat
+        response = prompt.invoke({"text": text, "language": language}).content
+
+        return response
+
     try:
-        # Deteksi bahasa input menggunakan langid
-        language, confidence = langid.classify(grogInput)
-
-        # Fungsi merangkum teks
-        def sumText(text):
-            prompt = groqPrompt | chat
-            response = prompt.invoke({"text": text, "language": language}).content
-
-            return response
-
         # Cek apakah file baru di-upload, jika ya tambahkan ke knowledgeBased
         if file and not st.session_state.fileUploaded:
             # Lakukan chunking pada konten file PDF
             fileChunks = list(textChunk(fileContents))
-            
+
             # Tambahkan semua chunk ke dalam knowledgeBased
             for chunk in fileChunks:
-                st.session_state.knowledgeBased.append({"input": "File", "content": chunk})
-
+                # membuat summary dari chunk text yang diberikan
                 summary = sumText(chunk)
                 st.session_state.knowledgeBased.append({"input": "Summary", "content": summary})
 
@@ -105,11 +77,12 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
 
         # Tampilkan pesan dari user
         st.chat_message("user").markdown(grogInput)
+        
         st.session_state.messages.append({"role": "user", "content": grogInput})
         st.session_state.memory.append({"role": "user", "content": grogInput})
 
         # Lakukan chunking pada input user yang lebih dari 4000 tokens
-        inputChunk = list(textChunk(grogInput)) if len(grogInput.split()) > 4000 else [grogInput]
+        inputChunk = list(textChunk(grogInput)) if len(grogInput.split()) > 3000 else [grogInput]
 
         combineResponse = []
         for chunk in inputChunk:
@@ -119,22 +92,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
 
         response = ' '.join(combineResponse)
 
-        # Tambahkan percakapan ke knowledgeBase dan lakukan pencarian similarity
-        if st.session_state.knowledgeBased:
-            knowledgeText = [item["content"] for item in st.session_state.knowledgeBased]
-            vectorizedKnowledge = vectorizeText(knowledgeText)
-            query = vectorizer.transform([grogInput])
-            similarities = cosine_similarity(query, vectorizedKnowledge).flatten()
-
-            # Pilih hasil pencarian dengan similarity tertinggi
-            topResults = [st.session_state.knowledgeBased[i] for i in similarities.argsort()[-5:][::-1]]
-
-            if topResults:
-                combinedInput = "\n\n".join([result["content"] for result in topResults]) + "\n\n" + grogInput
-            else:
-                combinedInput = grogInput
-        else:
-            combinedInput = grogInput
+        combinedInput = rag(grogInput, st.session_state.knowledgeBased)
 
         # Ambil window percakapan terakhir menggunakan sliding window
         relevantContext = slidingWindowContext(st.session_state.memory)
