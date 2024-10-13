@@ -8,9 +8,10 @@ from lib import readPDF, rag, textChunk, slidingWindowContext
 
 st.title("Groq Bot")
 
-# Inisialisasi GroqAI
 load_dotenv()
 
+# Inisialisasi GroqAI
+# Inisialisasi LLM untuk chat
 key = os.getenv("GROQ_AI_API_KEY")
 chat = ChatGroq(
     temperature=0,
@@ -20,10 +21,27 @@ chat = ChatGroq(
 
 # Membuat template percakapan
 system = """Kamu adalah asisten. 
-Selalu menjawab pertanyaan menggunakan bahasa {language}.
+Jawablah dalam bahasa {language} sesuai dengan preferensi pengguna.
 """
 human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+
+# Inisialisasi LLM untuk melakukan summary
+sumKey = os.getenv("GROQ_AI_API_KEY2")
+chatSum = ChatGroq(
+    temperature=0,
+    model="gemma2-9b-it",
+    api_key=sumKey
+)
+
+# Membuat template percakapan
+systemSum = """
+Kamu adalah asisten yang bertugas untuk membuat ringkasan dari teks yang diberikan.
+Berikan ringkasan yang singkat, padat, dan jelas dari teks, dengan menjaga informasi penting tetap utuh.
+Jawablah dalam bahasa {language} sesuai dengan preferensi pengguna.
+Jika teksnya terlalu panjang, fokuslah pada poin-poin kunci dan pastikan tidak ada detail penting yang terlewat.
+"""
+sumPrompt = ChatPromptTemplate.from_messages([("system", systemSum), ("human", human)])
 
 # Inisialisasi Knowledge based, messages history, memory dan file status
 if "knowledgeBased" not in st.session_state:
@@ -48,20 +66,30 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Fungsi merangkum teks
+def sumText(text, lang):
+    prompt = sumPrompt | chatSum
+    response = prompt.invoke({"text": text, "language": lang}).content
+
+    return response
+
+
 # React to user input
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
-
+    
     # Deteksi bahasa input menggunakan langid
     language, confidence = langid.classify(grogInput)
 
-    # Fungsi merangkum teks
-    def sumText(text):
-        prompt = groqPrompt | chat
-        response = prompt.invoke({"text": text, "language": language}).content
-
-        return response
-
     try:
+        knowledgeBase = st.session_state.knowledgeBased
+        memory = st.session_state.memory
+        chatHistory = st.session_state.messages
+
+        # Tampilkan pesan dari user
+        st.chat_message("user").markdown(grogInput)
+        chatHistory.append({"role": "user", "content": grogInput})
+        memory.append({"role": "user", "content": grogInput})
+
         # Cek apakah file baru di-upload, jika ya tambahkan ke knowledgeBased
         if file and not st.session_state.fileUploaded:
             # Lakukan chunking pada konten file PDF
@@ -69,20 +97,15 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
 
             # Tambahkan semua chunk ke dalam knowledgeBased
             for chunk in fileChunks:
-                # membuat summary dari chunk text yang diberikan
-                summary = sumText(chunk)
-                st.session_state.knowledgeBased.append({"input": "Summary", "content": summary})
+                st.session_state.knowledgeBased.append({"input": "File", "content": chunk})
+
+                summary = sumText(chunk, language)
+                knowledgeBase.append({"input": "Summary", "content": summary})
 
             st.session_state.fileUploaded = True 
 
-        # Tampilkan pesan dari user
-        st.chat_message("user").markdown(grogInput)
-        
-        st.session_state.messages.append({"role": "user", "content": grogInput})
-        st.session_state.memory.append({"role": "user", "content": grogInput})
-
-        # Lakukan chunking pada input user yang lebih dari 4000 tokens
-        inputChunk = list(textChunk(grogInput)) if len(grogInput.split()) > 3000 else [grogInput]
+        # Lakukan chunking pada input user yang lebih dari 3000 tokens
+        inputChunk = list(textChunk(grogInput, 3000)) if len(grogInput.split()) > 3000 else [grogInput]
 
         combineResponse = []
         for chunk in inputChunk:
@@ -92,12 +115,12 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
 
         response = ' '.join(combineResponse)
 
-        combinedInput = rag(grogInput, st.session_state.knowledgeBased)
+        combinedInput = rag(grogInput, knowledgeBase)
 
-        # Ambil window percakapan terakhir menggunakan sliding window
-        relevantContext = slidingWindowContext(st.session_state.memory)
+        # Mengambil percakapan terakhir menggunakan sliding window
+        relevantContext = slidingWindowContext(memory)
 
-        # Gabungkan konteks window terakhir dengan input baru
+        # Menggabungkan konteks window terakhir dengan input baru
         memoryContext = "\n\n".join([item["content"] for item in relevantContext])
         finalInput = memoryContext + "\n\n" + combinedInput
 
@@ -105,8 +128,8 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         finalResponse = groqPrompt | chat
         finalResponse = finalResponse.invoke({"text": finalInput, "language": language}).content
 
-        # Tambahkan input dan response ke knowledgeBase dan memori
-        st.session_state.knowledgeBased.append({"input": grogInput, "content": finalResponse})
+        # Menambahkan input dan response ke knowledgeBase
+        knowledgeBase.append({"input": grogInput, "content": finalResponse})
     except Exception as e:
         finalResponse = f"Maaf, permintaan anda tidak dapat dilakukan saat ini. Error: {e}"
     
@@ -114,5 +137,5 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     with st.chat_message("assistant"):
         st.markdown(finalResponse)
     
-    st.session_state.messages.append({"role": "assistant", "content": finalResponse})
-    st.session_state.memory.append({"role": "assistant", "content": finalResponse})
+    chatHistory.append({"role": "assistant", "content": finalResponse})
+    memory.append({"role": "assistant", "content": finalResponse})

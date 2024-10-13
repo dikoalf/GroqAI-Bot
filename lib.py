@@ -1,5 +1,8 @@
 import fitz
-import minsearch
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+vectorizer = TfidfVectorizer()
 
 # Fungsi membaca PDF
 def readPDF(file):
@@ -11,32 +14,27 @@ def readPDF(file):
 
 # fungsi melakukan retrieval augmented generation
 def rag(text,data):
-    # Initialize MinSearch Index
-    index = minsearch.Index(text_fields=["input","content"], keyword_fields=[])
-
     # Tambahkan percakapan ke knowledgeBase dan lakukan pencarian similarity
     if data:
-        # memperbarui index dengan data dari session knowledgebase
-        index.fit(data)
-        
-        # melakukan search bedasarkan query
-        searchResult = index.search(
-            query=text, 
-            boost_dict={'content': 3.0, 'input': 0.5},
-            num_results=1
-        )
+        knowledgeText = [item["content"] for item in data]
+        vectorizedKnowledge = vectorizer.fit_transform(knowledgeText)
+        query = vectorizer.transform([text])
+        similarities = cosine_similarity(query, vectorizedKnowledge).flatten()
 
-        if searchResult:
-            combinedInput = "\n\n".join([result["content"] for result in searchResult]) + "\n\n" + text
+        # Pilih hasil pencarian dengan similarity tertinggi
+        topResults = [data[i] for i in similarities.argsort()[-5:][::-1]]
+
+        if topResults:
+            combinedInput = "\n\n".join([result["content"] for result in topResults]) + "\n\n" + text
         else:
             combinedInput = text
     else:
         combinedInput = text
-
+    
     return combinedInput
 
 # Fungsi memecah teks jadi chunks
-def textChunk(text, size=3000):
+def textChunk(text, size=500):
     tokens = text.split()
     for i in range(0, len(tokens), size):
         chunk = ' '.join(tokens[i:i + size])
