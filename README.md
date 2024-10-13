@@ -2,16 +2,15 @@
 
 # Groq Bot Chatbot
 
-Welcome to the Groq Bot Chatbot project! This chatbot is designed to provide intelligent and contextually relevant responses to user queries. It supports automatic language detection, enhanced contextual understanding, and PDF integration.
+Welcome to the Groq Bot Chatbot project! This is an advanced chatbot designed to provide intelligent, contextually aware responses. It leverages Groq AI's models for both conversational interaction and summarization, supports multiple languages, and allows PDF content integration for enhanced knowledge-based responses.
 
 ## Features
 
 - **Automatic Language Detection**: The chatbot can detect and respond in the user's language, making interactions more seamless and user-friendly.
 - **Enhanced Contextual Understanding**: By integrating a retrieval-augmented generation (RAG) approach, the chatbot can reference previous topics and provide more coherent and contextually relevant responses.
-- **PDF Integration**: Users can upload PDF files, and the chatbot can extract and utilize the content to provide more informed answers.
-- **Dynamic Search Results**: The chatbot dynamically adjusts the number of search results based on the content available, ensuring the most relevant information is always provided.
-- **Text Vectorization**: The chatbot utilizes text vectorization techniques to better understand and process natural language input, enhancing the quality of responses.
-- **Memory**: The chatbot incorporates memory capabilities to retain context and information across interactions, leading to more personalized and accurate conversations.
+- **PDF Integration**: Users can upload PDF files, and the bot can extract, summarize, and use the content to answer questions.
+- **Contextual Memory**: Retains conversation history, improving the flow of longer interactions by maintaining relevant context.
+- **Text Vectorization & Cosine Similarity**: Uses TF-IDF for vectorizing text, enabling more accurate search results and improving chatbot intelligence.
 
 ## Installation
 
@@ -35,7 +34,8 @@ Welcome to the Groq Bot Chatbot project! This chatbot is designed to provide int
 4. Set up environment variables:
    Create a `.env` file in the root directory and add your Groq AI API key:
    ```plaintext
-   GROQ_AI_API_KEY=your_api_key_here
+   GROQ_AI_API_KEY=your_api_key_for_chat_model
+   GROQ_AI_API_KEY2=your_api_key_for_summary_model
    ```
 
 ## Usage
@@ -49,8 +49,8 @@ Welcome to the Groq Bot Chatbot project! This chatbot is designed to provide int
 
 ## Code Overview
 
-- `app.py`: Main application file that sets up the Streamlit interface and integrates the chatbot functionalities.
-- `minsearch.py`: Contains the search functionality using `pandas`, `scikit-learn`, and `numpy`.
+- `app.py`: Main file containing the Streamlit interface and chatbot logic, including PDF upload and conversation management.
+- `lib.py`: Utility functions for PDF extraction, text chunking, RAG implementation, and sliding window memory management.
 
 ## Example
 
