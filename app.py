@@ -114,7 +114,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         # Menambahkan input dan response ke knowledgeBase
         knowledgeBase.append({"input": grogInput, "content": finalResponse})
     except Exception as e:
-        finalResponse = f"Maaf, permintaan anda tidak dapat dilakukan saat ini. Error: {e}"
+        finalResponse = f"Maaf, permintaan anda tidak dapat dilakukan saat ini."
         
     # Tampilkan respons
     with st.chat_message("assistant"):
