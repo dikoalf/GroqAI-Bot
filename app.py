@@ -55,13 +55,15 @@ def sumText(text, lang):
 def processFile():
     if st.session_state["fileUploader"]:
         fileContents = readPDF(st.session_state["fileUploader"])
+        fileName = st.session_state["fileUploader"].name
+        st.write(fileName)
         # Lakukan chunking pada konten file PDF
         fileChunks = list(textChunk(fileContents))
         # Tambahkan semua chunk ke dalam knowledgeBased
-        for chunk in fileChunks:
-            st.session_state.knowledgeBased.append({"input": "File", "content": chunk})
+        for idx, chunk in enumerate(fileChunks):
+            st.session_state.knowledgeBased.append({"input": f"{fileName} - Part {idx+1}", "content": chunk})
             summary = sumText(chunk, "id")
-            st.session_state.knowledgeBased.append({"input": "Summary", "content": summary})
+            st.session_state.knowledgeBased.append({"input": f"{fileName} - Summary", "content": summary})
 
 # Upload PDF
 file = st.file_uploader("Upload PDF", type="pdf", key="fileUploader", on_change=processFile)
@@ -118,5 +120,9 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     # Tampilkan respons
     with st.chat_message("assistant"):
         st.markdown(finalResponse)
-        chatHistory.append({"role": "assistant", "content": finalResponse})
+        
+    chatHistory.append({"role": "assistant", "content": finalResponse})
     memory.append({"role": "assistant", "content": finalResponse})
+
+st.write(st.session_state.knowledgeBased)
+st.write(st.session_state.memory)

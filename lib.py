@@ -12,7 +12,7 @@ def readPDF(file):
 # fungsi melakukan retrieval augmented generation
 def rag(text,data):
     # Inisialisasi index
-    index = minsearch.Index(text_fields=["input", "content"], keyword_fields=[])
+    index = minsearch.Index(text_fields=["content"], keyword_fields=["input"])
 
     # memasukan data ke index
     if data:
@@ -21,7 +21,7 @@ def rag(text,data):
         # melakukan search bedasarkan input text
         searchResult = index.search(
             query=text, 
-            boost_dict={'content': 3.0, 'input': 0.5},
+            boost_dict={'content': 5.0, 'input': 1},
             num_results=1
         )
 
