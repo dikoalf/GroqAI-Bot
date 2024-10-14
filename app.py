@@ -56,7 +56,6 @@ def processFile():
     if st.session_state["fileUploader"]:
         fileContents = readPDF(st.session_state["fileUploader"])
         fileName = st.session_state["fileUploader"].name
-        st.write(fileName)
         # Lakukan chunking pada konten file PDF
         fileChunks = list(textChunk(fileContents))
         # Tambahkan semua chunk ke dalam knowledgeBased
@@ -124,5 +123,3 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     chatHistory.append({"role": "assistant", "content": finalResponse})
     memory.append({"role": "assistant", "content": finalResponse})
 
-st.write(st.session_state.knowledgeBased)
-st.write(st.session_state.memory)
