@@ -2,20 +2,20 @@
 
 # Groq Bot Chatbot
 
-Welcome to the Groq Bot Chatbot project! This is an advanced chatbot designed to provide intelligent, contextually aware responses. It leverages Groq AI's models for both conversational interaction and summarization, supports multiple languages, and allows PDF content integration for enhanced knowledge-based responses.
+Welcome to the Groq Bot Chatbot project! This is an advanced chatbot designed to provide intelligent, contextually aware responses. It leverages Groq AI's models for both conversational interaction, supports multiple languages, and allows PDF content integration for enhanced knowledge-based responses.
 
 ## Features
 
 - **Automatic Language Detection**: The chatbot can detect and respond in the user's language, making interactions more seamless and user-friendly.
 - **RAG-based Responses**: Uses Retrieval-Augmented Generation (RAG) to reference previously provided information and combine it with user queries for more accurate responses.
-- **PDF Integration**: Upload PDFs to provide the bot with additional information. It processes, summarizes, and uses the content to answer user queries.
+- **PDF Integration**: Upload PDFs to provide the bot with additional information. It processes, and uses the content to answer user queries.
 - **Contextual Memory**: Retains chat history to maintain context across longer interactions, improving response relevance over time.
-- **Text Chunking and Summarization**: Efficiently chunks large texts, including PDFs, and generates concise summaries.
+- **Text Chunking**: Efficiently chunks large texts, including PDFs.
 - **Knowledge-based Interaction**: Dynamically builds a knowledge base using PDF contents and conversation history, enabling contextually aware responses based on past interactions.
 
 ## Technology / Tools Used
 
-- **Groq AI**: Groq AI models are used for chat and text summarization (LLama 3 for chat and Gemma 2 for summarization).
+- **Groq AI**: Groq AI model are used for chat (LLama 3 for chat).
 - **Langchain**: A key framework to handle prompt templates and facilitate integration with language models.
 - **MinSearch**: Implements RAG (Retrieval-Augmented Generation) to search through knowledge base to generate intelligent responses.
 - **Streamlit**: A fast and easy way to create a web interface for the chatbot.
@@ -44,7 +44,6 @@ Welcome to the Groq Bot Chatbot project! This is an advanced chatbot designed to
    Create a `.env` file in the root directory and add your Groq AI API key:
    ```plaintext
    GROQ_AI_API_KEY=your_api_key_for_chat_model
-   GROQ_AI_API_KEY2=your_api_key_for_summary_model
    ```
 
 ## Usage
@@ -59,7 +58,7 @@ Welcome to the Groq Bot Chatbot project! This is an advanced chatbot designed to
 ## PDF Interaction
 
 - Upload a PDF file to provide additional context to the chatbot.
-- The chatbot will chunk and summarize the file, integrating this information into the conversation.
+- The chatbot will chunk the file, integrating this information into the conversation.
 
 ## Chat Interaction
 
