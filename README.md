@@ -13,6 +13,14 @@ Welcome to the Groq Bot Chatbot project! This is an advanced chatbot designed to
 - **Text Chunking and Summarization**: Efficiently chunks large texts, including PDFs, and generates concise summaries.
 - **Knowledge-based Interaction**: Dynamically builds a knowledge base using PDF contents and conversation history, enabling contextually aware responses based on past interactions.
 
+## Technology / Tools Used
+
+- **Groq AI**: Groq AI models are used for chat and text summarization (LLama 3 for chat and Gemma 2 for summarization).
+- **Langchain**: A key framework to handle prompt templates and facilitate integration with language models.
+- **MinSearch**: Implements RAG (Retrieval-Augmented Generation) to search through knowledge base to generate intelligent responses.
+- **Streamlit**: A fast and easy way to create a web interface for the chatbot.
+- **Python**: Core programming language for developing the chatbot's logic and functionalities.
+
 ## Installation
 
 1. Clone the repository:
