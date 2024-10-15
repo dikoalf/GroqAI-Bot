@@ -12,7 +12,7 @@ def readPDF(file):
 # fungsi melakukan retrieval augmented generation
 def rag(text,data):
     # Inisialisasi index
-    index = minsearch.Index(text_fields=["content"], keyword_fields=["input"])
+    index = minsearch.Index(text_fields=["content","input"], keyword_fields=[])
 
     # memasukan data ke index
     if data:
@@ -35,7 +35,7 @@ def rag(text,data):
     return combinedInput
 
 # Fungsi memecah teks jadi chunks
-def textChunk(text, size=3000):
+def textChunk(text, size=500):
     tokens = text.split()
     for i in range(0, len(tokens), size):
         chunk = ' '.join(tokens[i:i + size])

@@ -53,8 +53,8 @@ def sumText(text, lang):
 def processFile():
     if st.session_state["fileUploader"]:
         fileContents = readPDF(st.session_state["fileUploader"])
-        fileName = st.session_state["fileUploader"].name
-        st.write(fileName)
+        fileName = st.session_state["fileUploader"].name.lower()
+
         # Lakukan chunking pada konten file PDF
         fileChunks = list(textChunk(fileContents))
         # Tambahkan semua chunk ke dalam knowledgeBased
@@ -118,3 +118,4 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         st.markdown(finalResponse)
         
     messageHistory.append({"role": "assistant", "content": finalResponse})
+
