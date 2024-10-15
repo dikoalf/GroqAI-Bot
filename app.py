@@ -38,13 +38,11 @@ Jawablah dalam bahasa {language} sesuai dengan preferensi pengguna.
 Jika teksnya terlalu panjang, fokuslah pada poin-poin kunci dan pastikan tidak ada detail penting yang terlewat."""
 sumPrompt = ChatPromptTemplate.from_messages([("system", systemSum), ("human", human)])
 
-# Inisialisasi Knowledge based, messages history, memory dan file status
+# Inisialisasi Knowledge based, messages history
 if "knowledgeBased" not in st.session_state:
     st.session_state.knowledgeBased = []
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "memory" not in st.session_state:
-    st.session_state.memory = []
 
 # Fungsi merangkum teks
 def sumText(text, lang):
@@ -56,6 +54,7 @@ def processFile():
     if st.session_state["fileUploader"]:
         fileContents = readPDF(st.session_state["fileUploader"])
         fileName = st.session_state["fileUploader"].name
+        st.write(fileName)
         # Lakukan chunking pada konten file PDF
         fileChunks = list(textChunk(fileContents))
         # Tambahkan semua chunk ke dalam knowledgeBased
@@ -81,13 +80,11 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
     language, confidence = langid.classify(grogInput)
     try:
         knowledgeBase = st.session_state.knowledgeBased
-        memory = st.session_state.memory
-        chatHistory = st.session_state.messages
+        messageHistory = st.session_state.messages
         
         # Tampilkan pesan dari user
         st.chat_message("user").markdown(grogInput)
-        chatHistory.append({"role": "user", "content": grogInput})
-        memory.append({"role": "user", "content": grogInput})
+        messageHistory.append({"role": "user", "content": grogInput})
         
         # Lakukan chunking pada input user yang lebih dari 3000 tokens
         inputChunk = list(textChunk(grogInput, 3000)) if len(grogInput.split()) > 3000 else [grogInput]
@@ -101,7 +98,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         combinedInput = rag(grogInput, knowledgeBase)
         
         # Mengambil percakapan terakhir menggunakan sliding window
-        relevantContext = slidingWindowContext(memory)
+        relevantContext = slidingWindowContext(messageHistory)
         
         # Menggabungkan konteks window terakhir dengan input baru
         memoryContext = "\n\n".join([item["content"] for item in relevantContext])
@@ -114,12 +111,10 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         # Menambahkan input dan response ke knowledgeBase
         knowledgeBase.append({"input": grogInput, "content": finalResponse})
     except Exception as e:
-        finalResponse = f"Maaf, permintaan anda tidak dapat dilakukan saat ini."
+        finalResponse = f"Maaf, permintaan anda tidak dapat dilakukan saat ini. Error: {e}"
         
     # Tampilkan respons
     with st.chat_message("assistant"):
         st.markdown(finalResponse)
         
-    chatHistory.append({"role": "assistant", "content": finalResponse})
-    memory.append({"role": "assistant", "content": finalResponse})
-
+    messageHistory.append({"role": "assistant", "content": finalResponse})
