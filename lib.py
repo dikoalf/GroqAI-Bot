@@ -18,11 +18,13 @@ def rag(text,data):
     if data:
         index.fit(data)
 
+        minResult = min(len(data), 5)
+
         # melakukan search bedasarkan input text
         searchResult = index.search(
             query=text, 
             boost_dict={'content': 5.0, 'input': 1},
-            num_results=1
+            num_results=minResult
         )
 
         if searchResult:

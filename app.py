@@ -23,32 +23,11 @@ system = """Kamu adalah asisten. Jawablah dalam bahasa {language} sesuai dengan 
 human = "{text}"
 groqPrompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
-# Inisialisasi LLM untuk melakukan summary
-sumKey = os.getenv("GROQ_AI_API_KEY2")
-chatSum = ChatGroq(
-    temperature=0,
-    model="gemma2-9b-it",
-    api_key=sumKey
-)
-
-# Membuat template percakapan
-systemSum = """Kamu adalah asisten yang bertugas untuk membuat ringkasan dari teks yang diberikan.
-Berikan ringkasan yang singkat, padat, dan jelas dari teks, dengan menjaga informasi penting tetap utuh.
-Jawablah dalam bahasa {language} sesuai dengan preferensi pengguna.
-Jika teksnya terlalu panjang, fokuslah pada poin-poin kunci dan pastikan tidak ada detail penting yang terlewat."""
-sumPrompt = ChatPromptTemplate.from_messages([("system", systemSum), ("human", human)])
-
 # Inisialisasi Knowledge based, messages history
 if "knowledgeBased" not in st.session_state:
     st.session_state.knowledgeBased = []
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# Fungsi merangkum teks
-def sumText(text, lang):
-    prompt = sumPrompt | chatSum
-    response = prompt.invoke({"text": text, "language": lang}).content
-    return response
 
 def processFile():
     if st.session_state["fileUploader"]:
@@ -60,9 +39,7 @@ def processFile():
         # Tambahkan semua chunk ke dalam knowledgeBased
         for idx, chunk in enumerate(fileChunks):
             st.session_state.knowledgeBased.append({"input": f"{fileName} - Part {idx+1}", "content": chunk})
-            summary = sumText(chunk, "id")
-            st.session_state.knowledgeBased.append({"input": f"{fileName} - Summary", "content": summary})
-
+            
 # Upload PDF
 file = st.file_uploader("Upload PDF", type="pdf", key="fileUploader", on_change=processFile)
 
@@ -96,7 +73,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         response = ' '.join(combineResponse)
         
         combinedInput = rag(grogInput, knowledgeBase)
-        
+
         # Mengambil percakapan terakhir menggunakan sliding window
         relevantContext = slidingWindowContext(messageHistory)
         
@@ -118,4 +95,3 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         st.markdown(finalResponse)
         
     messageHistory.append({"role": "assistant", "content": finalResponse})
-
