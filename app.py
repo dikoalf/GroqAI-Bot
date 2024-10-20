@@ -38,7 +38,7 @@ def processFile():
         fileChunks = list(textChunk(fileContents))
         # Tambahkan semua chunk ke dalam knowledgeBased
         for idx, chunk in enumerate(fileChunks):
-            st.session_state.knowledgeBased.append({"input": f"{fileName} - Part {idx+1}", "content": chunk})
+            st.session_state.knowledgeBased.append({"input": f"File:{fileName}  - Part {idx+1}", "content": chunk})
             
 # Upload PDF
 file = st.file_uploader("Upload PDF", type="pdf", key="fileUploader", on_change=processFile)

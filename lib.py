@@ -1,5 +1,6 @@
 import fitz
 import minsearch
+from deep_translator import GoogleTranslator
 
 # Fungsi membaca PDF
 def readPDF(file):
@@ -22,7 +23,7 @@ def rag(text,data):
 
         # melakukan search bedasarkan input text
         searchResult = index.search(
-            query=text, 
+            query=GoogleTranslator(source='auto', target='en').translate(text), 
             boost_dict={'content': 5.0, 'input': 1},
             num_results=minResult
         )
