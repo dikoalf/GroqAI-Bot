@@ -57,7 +57,7 @@ if file:
     st.success("File berhasil di-upload!")
 
 # Fungsi untuk memisahkan teks dan kode
-def display_message(message):
+def displayMessage(message):
     parts = message.split('```')
     for i, part in enumerate(parts):
         if i % 2 == 0:
@@ -68,7 +68,7 @@ def display_message(message):
 # Tampilkan histori chat ketika ada prompt baru
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        display_message(message["content"])
+        displayMessage(message["content"])
 
 # React to user input
 if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
@@ -107,7 +107,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         
     # Tampilkan respons
     with st.chat_message("assistant"):
-        display_message(finalResponse)
+        displayMessage(finalResponse)
         
     messageHistory.append({"role": "assistant", "content": finalResponse})
 
