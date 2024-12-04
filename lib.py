@@ -69,7 +69,7 @@ def googleAuth():
     return service
 
 # Fungsi menyimpan memory bot ke Google Drive
-def saveToDrive(messages, drive, fileName, folderId = '1H1zWkXy8jgY-Xzc2QDTRFYm-pRkKcBX7'):
+def saveToDrive(messages, drive, fileName, folderId = 'None'):
     # Simpan message history ke dalam memori menggunakan StringIO
     buffer = io.StringIO()
     json.dump(messages, buffer, indent=4)
