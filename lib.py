@@ -17,21 +17,22 @@ def readPDF(file):
     return text
 
 # fungsi melakukan retrieval augmented generation
-def rag(text,data):
+def rag(text, data):
     # Inisialisasi index
     index = minsearch.Index(text_fields=["content","input"], keyword_fields=[])
 
-    # memasukan data ke index
+    # Memasukkan data ke index
     if data:
         index.fit(data)
 
-        minResult = min(len(data), 5)
+        # Terjemahkan teks input ke bahasa Inggris
+        translatedText = GoogleTranslator(source='auto', target='en').translate(text)
 
-        # melakukan search bedasarkan input text
         searchResult = index.search(
-            query=GoogleTranslator(source='auto', target='en').translate(text), 
+            query=translatedText,
             boost_dict={'content': 5.0, 'input': 1},
-            num_results=minResult
+            num_results=min(len(data), 5),
+            relevance_threshold=0.1
         )
 
         if searchResult:
@@ -68,7 +69,7 @@ def googleAuth():
     return service
 
 # Fungsi menyimpan memory bot ke Google Drive
-def saveToDrive(messages, drive, fileName, folderId = None):
+def saveToDrive(messages, drive, fileName, folderId = '1H1zWkXy8jgY-Xzc2QDTRFYm-pRkKcBX7'):
     # Simpan message history ke dalam memori menggunakan StringIO
     buffer = io.StringIO()
     json.dump(messages, buffer, indent=4)

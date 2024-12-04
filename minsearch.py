@@ -58,19 +58,21 @@ class Index:
 
         return self
 
-    def search(self, query, filter_dict={}, boost_dict={}, num_results=10):
+    def search(self, query, filter_dict={}, boost_dict={}, num_results=10, relevance_threshold=0.1):
         """
-        Searches the index with the given query, filters, and boost parameters.
+        Searches the index with the given query, filters, boost parameters, and a relevance threshold.
 
         Args:
             query (str): The search query string.
             filter_dict (dict): Dictionary of keyword fields to filter by. Keys are field names and values are the values to filter by.
             boost_dict (dict): Dictionary of boost scores for text fields. Keys are field names and values are the boost scores.
             num_results (int): The number of top results to return. Defaults to 10.
+            relevance_threshold (float): The minimum score for a document to be considered relevant. Defaults to 0.1.
 
         Returns:
-            list of dict: List of documents matching the search criteria, ranked by relevance.
+            list of dict: List of documents matching the search criteria, ranked by relevance, with scores above the relevance threshold.
         """
+
         query_vecs = {field: self.vectorizers[field].transform([query]) for field in self.text_fields}
         scores = np.zeros(len(self.docs))
 
