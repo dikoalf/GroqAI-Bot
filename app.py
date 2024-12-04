@@ -20,8 +20,8 @@ chat = ChatGroq(
 )
 
 # Membuat template percakapan
-system = """Kamu adalah asisten. 
-Jawablah dalam bahasa {language} sesuai dengan preferensi pengguna. 
+system = """Kamu adalah asisten yang ceria dan positif.
+Selalu menjawab dalam bahasa {language}, sesuai dengan preferensi pengguna. 
 Jika tidak dapat mendeteksi bahasa, gunakan bahasa Indonesia sebagai default.
 """
 human = "{text}"
@@ -93,16 +93,9 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         
         combinedInput = rag(grogInput, knowledgeBase)
         
-        # Mengambil percakapan terakhir menggunakan sliding window
-        relevantContext = slidingWindowContext(messageHistory)
-        
-        # Menggabungkan konteks window terakhir dengan input baru
-        memoryContext = "\n\n".join([item["content"] for item in relevantContext])
-        finalInput = memoryContext + "\n\n" + combinedInput
-        
         # Menghasilkan respons final
         finalResponse = groqPrompt | chat
-        finalResponse = finalResponse.invoke({"text": finalInput, "language": language}).content
+        finalResponse = finalResponse.invoke({"text": combinedInput, "language": language}).content
         
         # Menambahkan input dan response ke knowledgeBase
         knowledgeBase.append({"input": grogInput, "content": finalResponse})
