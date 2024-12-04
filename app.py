@@ -103,7 +103,7 @@ if grogInput := st.chat_input("Apa yang ingin Anda ketahui?"):
         errorLogEntry = f"{datetime.datetime.now()}: {str(e)}"
         st.session_state.errorLog.append(errorLogEntry)
         saveToDrive(st.session_state.errorLog, drive, "errorLog.json", folderID)
-        finalResponse = f"Maaf, permintaan Anda tidak dapat dilakukan saat ini. Error: {e}"
+        finalResponse = f"Maaf, permintaan Anda tidak dapat dilakukan saat ini."
         
     # Tampilkan respons
     with st.chat_message("assistant"):
